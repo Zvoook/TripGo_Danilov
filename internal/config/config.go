@@ -93,6 +93,9 @@ func Load() (Config, error) {
 	if max_conns < min_conns {
 		return Config{}, fmt.Errorf("max connection number should be more than min connection number")
 	}
+	if max_conns == 0 {
+		return Config{}, fmt.Errorf("DATABASE_MAX_CONNS must be greater than zero")
+	}
 
 	max_lifetime, err := LoadTime("DATABASE_MAX_CONN_LIFETIME")
 	if err != nil {

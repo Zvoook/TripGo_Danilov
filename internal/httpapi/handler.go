@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -34,7 +35,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		//Log.Write()
+		log.Printf("json encoding failed: %v", err)
 	}
 }
 
@@ -54,7 +55,7 @@ func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		//Log.Write()
+		log.Printf("json encoding failed: %v", err)
 	}
 }
 
@@ -96,6 +97,6 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId generat
 	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
-		//Log.Write()
+		log.Printf("json encoding failed: %v", err)
 	}
 }

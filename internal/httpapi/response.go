@@ -20,6 +20,7 @@ func writeProblem(
 	problem.Detail = &detail
 	problem.Instance = &(r.URL.Path)
 	problem.Type = "about:blank"
+	problem.Title = http.StatusText(status)
 
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(status)
