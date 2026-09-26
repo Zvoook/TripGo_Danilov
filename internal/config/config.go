@@ -26,14 +26,14 @@ type Config struct {
 func LoadInt32(name string) (int32, error) {
 	var err error
 	raw := os.Getenv(name)
-	data, err := strconv.Atoi(raw)
+	data, err := strconv.ParseInt(raw, 10, 32)
 	if err != nil {
-		err = fmt.Errorf("%s: %w", name, err)
+		return -1, fmt.Errorf("%s: %w", name, err)
 	}
-	if data <= 0 {
-		err = fmt.Errorf("%s must be positive", name)
+	if data < 0 {
+		return -1, fmt.Errorf("%s must be positive", name)
 	}
-	return int32(data), err
+	return int32(data), nil
 }
 
 func LoadTime(name string) (time.Duration, error) {
@@ -41,12 +41,12 @@ func LoadTime(name string) (time.Duration, error) {
 	raw := os.Getenv(name)
 	data, err := time.ParseDuration(raw)
 	if err != nil {
-		err = fmt.Errorf("%s: %w", name, err)
+		return -1, fmt.Errorf("%s: %w", name, err)
 	}
 	if data <= 0 {
-		err = fmt.Errorf("%s must be positive", name)
+		return -1, fmt.Errorf("%s must be positive", name)
 	}
-	return data, err
+	return data, nil
 }
 
 func Load() (Config, error) {
@@ -89,6 +89,10 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.DatabaseMinConns = min_conns
+
+	if max_conns < min_conns {
+		return Config{}, fmt.Errorf("max connection number should be more than min connection number")
+	}
 
 	max_lifetime, err := LoadTime("DATABASE_MAX_CONN_LIFETIME")
 	if err != nil {

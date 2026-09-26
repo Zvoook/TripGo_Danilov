@@ -10,14 +10,18 @@ import (
 	"syscall"
 
 	config "github.com/Zvoook/TripGo_Danilov/internal/config"
+	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	"github.com/Zvoook/TripGo_Danilov/internal/httpapi"
 	"github.com/Zvoook/TripGo_Danilov/internal/postgres"
+	"github.com/Zvoook/TripGo_Danilov/internal/trip"
+
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
 	if err := run(); err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
@@ -34,16 +38,25 @@ func run() error {
 	defer pool.Close()
 	fmt.Println("Successful connection")
 
-	handler := httpapi.NewHandler(pool, cfg.DatabaseQueryTimeout)
+	repository := trip.NewRepository(pool, cfg.DatabaseQueryTimeout)
+
+	handler := httpapi.NewHandler(pool, cfg.DatabaseQueryTimeout, repository)
 
 	router := chi.NewRouter()
-	router.Get("/health", handler.Health)
-	router.Get("/ready", handler.Ready)
-	router.Get("/debug/slow", handler.Waiting)
+	// router.Get("/health", handler.Health)
+	// router.Get("/ready", handler.Ready)
+	// router.Get("/api/v1/trips/{tripId}", handler.GetByID)
+	apiHandler := generated.HandlerWithOptions(
+		handler,
+		generated.ChiServerOptions{
+			BaseRouter:       router,
+			ErrorHandlerFunc: httpapi.HandleParameterError,
+		},
+	)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           router,
+		Handler:           apiHandler,
 		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
 		ReadTimeout:       cfg.HTTPReadTimeout,
 		WriteTimeout:      cfg.HTTPWriteTimeout,
