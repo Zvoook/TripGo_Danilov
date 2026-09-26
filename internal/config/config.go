@@ -17,6 +17,10 @@ type Config struct {
 	DatabaseMaxConnLifetime time.Duration
 	DatabaseConnectTimeout  time.Duration
 	DatabaseQueryTimeout    time.Duration
+	HTTPReadHeaderTimeout   time.Duration
+	HTTPReadTimeout         time.Duration
+	HTTPWriteTimeout        time.Duration
+	HTTPIdleTimeout         time.Duration
 }
 
 func LoadInt32(name string) (int32, error) {
@@ -104,5 +108,28 @@ func Load() (Config, error) {
 	}
 	cfg.DatabaseQueryTimeout = query_timeout
 
+	read_header_timeout, err := LoadTime("HTTP_READ_HEADER_TIMEOUT")
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HTTPReadHeaderTimeout = read_header_timeout
+
+	read_timeout, err := LoadTime("HTTP_READ_TIMEOUT")
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HTTPReadTimeout = read_timeout
+
+	write_timeout, err := LoadTime("HTTP_WRITE_TIMEOUT")
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HTTPWriteTimeout = write_timeout
+
+	idle_timeout, err := LoadTime("HTTP_IDLE_TIMEOUT")
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HTTPIdleTimeout = idle_timeout
 	return cfg, nil
 }
