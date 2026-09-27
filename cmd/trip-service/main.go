@@ -40,12 +40,22 @@ func run() error {
 
 	repository := trip.NewRepository(pool, cfg.DatabaseQueryTimeout)
 
-	handler := httpapi.NewHandler(pool, cfg.DatabaseQueryTimeout, repository)
+	transactions := postgres.NewTxManager(pool, cfg.DatabaseQueryTimeout)
+
+	service := trip.NewService(
+		repository,
+		transactions,
+		cfg.DatabaseQueryTimeout,
+	)
+
+	handler := httpapi.NewHandler(
+		pool,
+		cfg.DatabaseQueryTimeout,
+		repository,
+		service,
+	)
 
 	router := chi.NewRouter()
-	// router.Get("/health", handler.Health)
-	// router.Get("/ready", handler.Ready)
-	// router.Get("/api/v1/trips/{tripId}", handler.GetByID)
 	apiHandler := generated.HandlerWithOptions(
 		handler,
 		generated.ChiServerOptions{

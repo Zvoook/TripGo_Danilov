@@ -17,14 +17,20 @@ type Handler struct {
 	pool         *pgxpool.Pool
 	queryTimeout time.Duration
 	trips        *trip.Repository
-	generated.Unimplemented
+	service      *trip.Service
 }
 
-func NewHandler(pool *pgxpool.Pool, timeout time.Duration, repos *trip.Repository) *Handler {
+func NewHandler(
+	pool *pgxpool.Pool,
+	timeout time.Duration,
+	repos *trip.Repository,
+	service *trip.Service,
+) *Handler {
 	return &Handler{
 		pool:         pool,
 		queryTimeout: timeout,
 		trips:        repos,
+		service:      service,
 	}
 }
 
@@ -69,33 +75,117 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId generat
 		writeProblem(w, r, http.StatusNotFound, "trip_not_found", "No trips was found")
 		return
 	} else if err != nil {
-		writeProblem(w, r, http.StatusInternalServerError, "internal_error", "Server arise the issue")
+		log.Printf("get trip failed: %v", err)
+		writeProblem(
+			w, r,
+			http.StatusInternalServerError,
+			"internal_error",
+			"Internal server error",
+		)
 		return
 	} else {
 		w.WriteHeader(http.StatusOK)
-
-		response = generated.Trip{
-			Id:         result.ID,
-			UserId:     result.UserID,
-			DriverId:   result.DriverID,
-			Price:      result.Price,
-			StartedAt:  result.StartedAt,
-			FinishedAt: result.FinishedAt,
-			Status:     generated.TripStatus(result.Status),
-			StartPoint: generated.Coordinates{
-				Latitude:  result.StartLatitude,
-				Longitude: result.StartLongitude,
-			},
-			EndPoint: generated.Coordinates{
-				Latitude:  result.EndLatitude,
-				Longitude: result.EndLongitude,
-			},
-			LastPositionAt: nil,
-		}
+		response = toAPITrip(result)
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 
+	if err != nil {
+		log.Printf("json encoding failed: %v", err)
+	}
+}
+
+func (h *Handler) CreateTrip(
+	w http.ResponseWriter,
+	r *http.Request,
+	params generated.CreateTripParams,
+) {
+	input, err := readCreateTrip(w, r)
+	if err != nil {
+		writeProblem(w, r, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	result, err := h.service.Create(r.Context(), input)
+
+	if errors.Is(err, trip.ErrInvalidInput) {
+		writeProblem(w, r, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	if errors.Is(err, trip.ErrDriverBusy) {
+		writeProblem(
+			w, r,
+			http.StatusConflict,
+			"driver_busy",
+			"Driver already has an active trip",
+		)
+		return
+	}
+
+	if err != nil {
+		log.Printf("create trip failed: %v", err)
+		writeProblem(
+			w, r,
+			http.StatusInternalServerError,
+			"internal_error",
+			"Internal server error",
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Location", "/api/v1/trips/"+result.ID.String())
+	w.WriteHeader(http.StatusCreated)
+
+	err = json.NewEncoder(w).Encode(toAPITrip(result))
+	if err != nil {
+		log.Printf("json encoding failed: %v", err)
+	}
+}
+
+func (h *Handler) FinishTrip(
+	w http.ResponseWriter,
+	r *http.Request,
+	tripId generated.TripId,
+) {
+	result, err := h.service.Finish(r.Context(), tripId)
+
+	if errors.Is(err, trip.ErrNotFound) {
+		writeProblem(
+			w, r,
+			http.StatusNotFound,
+			"trip_not_found",
+			"Trip not found",
+		)
+		return
+	}
+
+	if errors.Is(err, trip.ErrTripCompleted) {
+		writeProblem(
+			w, r,
+			http.StatusConflict,
+			"trip_completed",
+			"Trip is already completed",
+		)
+		return
+	}
+
+	if err != nil {
+		log.Printf("finish trip failed: %v", err)
+		writeProblem(
+			w, r,
+			http.StatusInternalServerError,
+			"internal_error",
+			"Internal server error",
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(toAPITrip(result))
 	if err != nil {
 		log.Printf("json encoding failed: %v", err)
 	}
