@@ -37,7 +37,10 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 		return fmt.Errorf("Transaction error: %w", err)
 	}
 	defer func() {
-		rollbackCtx, cancel := context.WithTimeout(context.Background(), m.rollbackTimeout)
+		rollbackCtx, cancel := context.WithTimeout(
+			context.WithoutCancel(ctx),
+			m.rollbackTimeout,
+		)
 		defer cancel()
 		err := tx.Rollback(rollbackCtx)
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
