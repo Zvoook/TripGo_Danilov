@@ -162,9 +162,3 @@ make build
 Частичный уникальный индекс `one_active_trip_per_driver_idx` запрещает несколько активных поездок одному водителю. Ошибка PostgreSQL `23505` именно для этого индекса превращается в `driver_busy`.
 
 При завершении `SELECT FOR UPDATE` блокирует строку до конца транзакции. После проверки статуса сервис меняет поездку и записывает `active → completed` в историю. Параллельный запрос после ожидания увидит `completed` и получит `409`; время завершения не изменится.
-
-## Объём работы
-
-Реализуется обязательная часть ЛР1. Идемпотентность и Dockerfile со звёздочкой не реализованы. Метрики, трассировка и автоматические тесты относятся к следующим работам.
-
-Задание: [ЛР1 — HTTP API и PostgreSQL](https://github.com/course-go-autumn-2026/course/blob/main/homework/tasks/01-http-and-postgres/README.md). Общие требования: [conventions.md](https://github.com/course-go-autumn-2026/course/blob/main/homework/docs/conventions.md).
