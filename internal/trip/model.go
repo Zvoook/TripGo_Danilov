@@ -8,6 +8,11 @@ import (
 
 type Status string
 
+const (
+	StatusActive    Status = "active"
+	StatusCompleted Status = "completed"
+)
+
 type Trip struct {
 	ID             uuid.UUID
 	UserID         uuid.UUID
