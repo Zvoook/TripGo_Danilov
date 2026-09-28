@@ -1,0 +1,14 @@
+{
+  "files.eol": "\n",
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.organizeImports": "explicit" }
+  },
+  "[makefile]": { "editor.insertSpaces": false },
+  "go.useLanguageServer": true,
+  "go.testFlags": ["-race"],
+  "go.toolsManagement.autoUpdate": false,
+  "go.testEnvFile": "${workspaceFolder}/.env",
+  "terminal.integrated.defaultProfile.linux": "bash"
+}
