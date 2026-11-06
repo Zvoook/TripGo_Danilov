@@ -1,4 +1,4 @@
-package httpapi
+package create
 
 import (
 	"bytes"
@@ -8,27 +8,27 @@ import (
 	"mime"
 	"net/http"
 
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
-	"github.com/Zvoook/TripGo_Danilov/internal/trip"
 )
 
 func readCreateTrip(
 	w http.ResponseWriter,
 	r *http.Request,
-) (trip.CreateInput, error) {
-	var input trip.CreateInput
+) (tripdomain.CreateInput, error) {
+	var input tripdomain.CreateInput
 	var request generated.CreateTripJSONRequestBody
 
 	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || contentType != "application/json" {
-		return input, fmt.Errorf("Content-Type must be application/json")
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return input, fmt.Errorf("cannot read request body")
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	fields, err := requiredFields(
@@ -36,17 +36,17 @@ func readCreateTrip(
 		"user_id", "driver_id", "start_point", "end_point", "price",
 	)
 	if err != nil {
-		return input, err
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	_, err = requiredFields(fields["start_point"], "latitude", "longitude")
 	if err != nil {
-		return input, fmt.Errorf("start_point: %w", err)
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	_, err = requiredFields(fields["end_point"], "latitude", "longitude")
 	if err != nil {
-		return input, fmt.Errorf("end_point: %w", err)
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	decoder := json.NewDecoder(bytes.NewReader(body))
@@ -54,7 +54,7 @@ func readCreateTrip(
 
 	err = decoder.Decode(&request)
 	if err != nil {
-		return input, fmt.Errorf("invalid request fields")
+		return input, tripdomain.ErrInvalidRequest
 	}
 
 	input.UserID = request.UserId

@@ -34,7 +34,7 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 		IsoLevel: pgx.ReadCommitted,
 	})
 	if err != nil {
-		return fmt.Errorf("Transaction error: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() {
 		rollbackCtx, cancel := context.WithTimeout(
@@ -51,7 +51,7 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 	txCtx := context.WithValue(ctx, txKey{}, tx)
 	err = fn(txCtx)
 	if err != nil {
-		return fmt.Errorf("Transaction error: %w", err)
+		return err
 	}
 
 	if err := tx.Commit(ctx); err != nil {

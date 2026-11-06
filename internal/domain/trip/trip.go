@@ -28,3 +28,13 @@ type Trip struct {
 	UpdatedAt      time.Time
 	FinishedAt     *time.Time
 }
+
+func (t *Trip) Finish(at time.Time) error {
+	if t.Status != StatusActive {
+		return ErrTripCompleted
+	}
+	t.Status = StatusCompleted
+	t.UpdatedAt = at
+	t.FinishedAt = &at
+	return nil
+}
