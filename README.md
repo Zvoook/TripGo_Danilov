@@ -134,6 +134,8 @@ make build
 
 `make build` создаёт `bin/trip-service`. Контракт находится в `contracts/openapi/trip-service.openapi.yaml`.
 
+По замечанию ревью в схемах `Trip` и `TripPosition` свойства перечислены в одном объекте вместо `allOf` с несколькими `additionalProperties: false`. Имена, типы и обязательность полей сохранены: исправлена валидация схемы, которая раньше отвергала корректные ответы.
+
 ## Миграции
 
 `make migrate` применяет обе миграции: `trips` и `trip_status_history`.

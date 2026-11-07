@@ -1,3 +1,4 @@
+//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test -mock_names tripRepository=MockTripRepository
 package get
 
 import (
