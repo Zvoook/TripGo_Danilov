@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TripGo: debug service (after implementation)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/trip-service",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

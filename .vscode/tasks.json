@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "TripGo: environment start", "type": "shell", "command": "tripgoctl cluster start && tripgoctl environment start", "problemMatcher": [] },
+    { "label": "TripGo: connect", "type": "shell", "command": "tripgoctl connect", "problemMatcher": [] },
+    { "label": "TripGo: generate", "type": "shell", "command": "make generate", "problemMatcher": "$go" },
+    { "label": "TripGo: migrate", "type": "shell", "command": "make migrate", "problemMatcher": [] },
+    { "label": "TripGo: test", "type": "shell", "command": "make test", "group": "test", "problemMatcher": "$go" },
+    { "label": "TripGo: run", "type": "shell", "command": "make run", "problemMatcher": "$go" }
+  ]
+}
