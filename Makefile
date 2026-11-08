@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: run build test generate migrate migrate-down env-check
+.PHONY: run build test test-integration generate migrate migrate-down env-check
 
 run:
 	go run ./cmd/trip-service
@@ -10,7 +10,10 @@ build:
 	go build -o bin/trip-service ./cmd/trip-service
 
 test:
-	go test -race ./...
+	go test -race -cover ./...
+
+test-integration:
+	go test -race -tags=integration ./internal/repository/...
 
 generate:
 	@mkdir -p internal/generated
