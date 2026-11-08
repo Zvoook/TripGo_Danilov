@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
-	"github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/get"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
+	"github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/get"
 )
 
 func TestGetTrip(t *testing.T) {

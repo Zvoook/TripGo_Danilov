@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
+
 	api "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	transport "github.com/Zvoook/TripGo_Danilov/internal/http"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
-	"go.uber.org/mock/gomock"
 )
 
 func TestHealthEndpoints(t *testing.T) {

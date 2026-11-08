@@ -7,11 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	api "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/trip/create"
-	"github.com/google/uuid"
-	"go.uber.org/mock/gomock"
 )
 
 const validTripJSON = `{

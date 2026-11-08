@@ -4,6 +4,7 @@ package finish
 
 import (
 	"context"
+
 	"github.com/google/uuid"
 
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"

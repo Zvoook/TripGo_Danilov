@@ -1,13 +1,16 @@
 -include .env
 export
 
-.PHONY: run build test test-integration generate migrate migrate-down env-check
+.PHONY: run build lint test test-integration generate migrate migrate-down env-check
 
 run:
 	go run ./cmd/trip-service
 
 build:
 	go build -o bin/trip-service ./cmd/trip-service
+
+lint:
+	golangci-lint run
 
 test:
 	go test -race -cover ./...

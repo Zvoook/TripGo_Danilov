@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	transport "github.com/Zvoook/TripGo_Danilov/internal/http"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
 	get "github.com/Zvoook/TripGo_Danilov/internal/http/trip/get"
-	"github.com/google/uuid"
-
-	"go.uber.org/mock/gomock"
 )
 
 func TestGetTrip_NotFound(t *testing.T) {
@@ -46,6 +46,7 @@ func TestGetTrip_NotFound(t *testing.T) {
 		t.Errorf("problem code = %q, want trip_not_found", problem.Code)
 	}
 }
+
 func TestGetTrip_OK(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	ctrl := gomock.NewController(t)

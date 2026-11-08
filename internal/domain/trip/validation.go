@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func validCoordinate(value float64, limit float64) bool {
+func validCoordinate(value, limit float64) bool {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
 		return false
 	}

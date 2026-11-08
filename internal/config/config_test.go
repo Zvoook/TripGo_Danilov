@@ -40,10 +40,14 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadInvalidSettings(t *testing.T) {
 	for _, tt := range []struct{ name, value string }{
-		{"DATABASE_URL", ""}, {"LOG_LEVEL", "verbose"},
-		{"DATABASE_MAX_CONNS", "0"}, {"DATABASE_MIN_CONNS", "11"},
-		{"DATABASE_MAX_CONNS", "abc"}, {"DATABASE_MIN_CONNS", "-1"},
-		{"DATABASE_QUERY_TIMEOUT", "0s"}, {"OPERATION_TIMEOUT", "-1s"},
+		{"DATABASE_URL", ""},
+		{"LOG_LEVEL", "verbose"},
+		{"DATABASE_MAX_CONNS", "0"},
+		{"DATABASE_MIN_CONNS", "11"},
+		{"DATABASE_MAX_CONNS", "abc"},
+		{"DATABASE_MIN_CONNS", "-1"},
+		{"DATABASE_QUERY_TIMEOUT", "0s"},
+		{"OPERATION_TIMEOUT", "-1s"},
 		{"HTTP_READ_TIMEOUT", "invalid"},
 	} {
 		t.Run(tt.name+"="+tt.value, func(t *testing.T) {

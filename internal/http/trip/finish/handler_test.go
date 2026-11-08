@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	api "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/trip/finish"
-	"github.com/google/uuid"
-	"go.uber.org/mock/gomock"
 )
 
 func TestFinishTrip_OK(t *testing.T) {

@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
-	"github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/create"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
+	"github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/create"
 )
 
 func TestCreateTrip(t *testing.T) {

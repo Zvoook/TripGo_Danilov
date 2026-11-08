@@ -4,8 +4,9 @@ package get
 import (
 	"context"
 
-	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	"github.com/google/uuid"
+
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 )
 
 type getter interface {
