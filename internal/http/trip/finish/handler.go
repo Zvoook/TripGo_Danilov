@@ -2,12 +2,12 @@ package finish
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	convert "github.com/Zvoook/TripGo_Danilov/internal/http/convert"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/requestlog"
 )
 
 type Handler struct {
@@ -26,10 +26,11 @@ func (h *Handler) FinishTrip(
 	tripId generated.TripId,
 ) {
 	result, err := h.finishUsecase.Finish(r.Context(), tripId)
-
 	if err != nil {
-		log.Printf("finish trip failed: %v", err)
 		problem := domainerror.Problem(err)
+		if problem.Status >= http.StatusInternalServerError {
+			requestlog.Error(r.Context(), "trip operation failed", err)
+		}
 		domainerror.WriteProblem(w, r, problem)
 		return
 	}
@@ -39,6 +40,6 @@ func (h *Handler) FinishTrip(
 
 	err = json.NewEncoder(w).Encode(convert.ToAPITrip(result))
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }

@@ -2,11 +2,11 @@ package domainerror
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/requestlog"
 )
 
 func WriteProblem(
@@ -20,11 +20,11 @@ func WriteProblem(
 	w.WriteHeader(int(problem.Status))
 	err := json.NewEncoder(w).Encode(problem)
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }
 
-func HandleParameterError(w http.ResponseWriter, r *http.Request, err error) {
+func HandleParameterError(w http.ResponseWriter, r *http.Request, _ error) {
 	problem := Problem(tripdomain.ErrInvalidRequest)
 	WriteProblem(w, r, problem)
 }

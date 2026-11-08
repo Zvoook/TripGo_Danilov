@@ -7,13 +7,13 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
-	"github.com/Zvoook/TripGo_Danilov/internal/infra/postgres"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
+	"github.com/Zvoook/TripGo_Danilov/internal/infra/postgres"
 )
 
 type Repository struct {
@@ -102,6 +102,7 @@ func scanTrip(row pgx.Row) (tripdomain.Trip, error) {
 	}
 	return result, nil
 }
+
 func (r *Repository) Insert(ctx context.Context, value tripdomain.Trip) error {
 	insertCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
@@ -205,4 +206,16 @@ func (r *Repository) Complete(ctx context.Context, id uuid.UUID, at time.Time) e
 		return fmt.Errorf("complete trip: expected one active trip")
 	}
 	return nil
+}
+
+func (r *Repository) CountActive(ctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	var count int64
+	const query = "SELECT count(*) FROM trips WHERE status = $1"
+	if err := r.pool.QueryRow(ctx, query, tripdomain.StatusActive).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count active trips: %w", err)
+	}
+	return count, nil
 }

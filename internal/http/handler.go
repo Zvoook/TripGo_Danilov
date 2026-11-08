@@ -3,11 +3,11 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/requestlog"
 	create "github.com/Zvoook/TripGo_Danilov/internal/http/trip/create"
 	finish "github.com/Zvoook/TripGo_Danilov/internal/http/trip/finish"
 	get "github.com/Zvoook/TripGo_Danilov/internal/http/trip/get"
@@ -44,7 +44,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }
 
@@ -64,7 +64,7 @@ func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }
 

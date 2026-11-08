@@ -2,12 +2,12 @@ package create
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	convert "github.com/Zvoook/TripGo_Danilov/internal/http/convert"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/requestlog"
 )
 
 type Handler struct {
@@ -23,20 +23,24 @@ func NewHandler(createUsecase creator) *Handler {
 func (h *Handler) CreateTrip(
 	w http.ResponseWriter,
 	r *http.Request,
-	params generated.CreateTripParams,
+	_ generated.CreateTripParams,
 ) {
 	input, err := readCreateTrip(w, r)
 	if err != nil {
 		problem := domainerror.Problem(err)
+		if problem.Status >= http.StatusInternalServerError {
+			requestlog.Error(r.Context(), "trip operation failed", err)
+		}
 		domainerror.WriteProblem(w, r, problem)
 		return
 	}
 
 	result, err := h.createUsecase.Create(r.Context(), input)
-
 	if err != nil {
 		problem := domainerror.Problem(err)
-		log.Printf("create trip failed: %v", err)
+		if problem.Status >= http.StatusInternalServerError {
+			requestlog.Error(r.Context(), "trip operation failed", err)
+		}
 		domainerror.WriteProblem(w, r, problem)
 		return
 	}
@@ -47,6 +51,6 @@ func (h *Handler) CreateTrip(
 
 	err = json.NewEncoder(w).Encode(convert.ToAPITrip(result))
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }

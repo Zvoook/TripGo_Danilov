@@ -9,6 +9,8 @@ import (
 	api "github.com/Zvoook/TripGo_Danilov/internal/generated"
 )
 
+var ErrInternal = errors.New("internal error")
+
 func Problem(err error) api.Problem {
 	problem := api.Problem{}
 	detail := err.Error()

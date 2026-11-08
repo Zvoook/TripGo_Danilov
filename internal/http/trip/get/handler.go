@@ -2,12 +2,12 @@ package get
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	convert "github.com/Zvoook/TripGo_Danilov/internal/http/convert"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/requestlog"
 )
 
 type Handler struct {
@@ -27,8 +27,10 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId generat
 	w.Header().Set("Content-type", "application/json")
 
 	if err != nil {
-		log.Printf("get trip failed: %v", err)
 		problem := domainerror.Problem(err)
+		if problem.Status >= http.StatusInternalServerError {
+			requestlog.Error(r.Context(), "trip operation failed", err)
+		}
 		domainerror.WriteProblem(w, r, problem)
 		return
 	} else {
@@ -37,8 +39,7 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId generat
 	}
 
 	err = json.NewEncoder(w).Encode(response)
-
 	if err != nil {
-		log.Printf("json encoding failed: %v", err)
+		requestlog.Error(r.Context(), "json encoding failed", err)
 	}
 }

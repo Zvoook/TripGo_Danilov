@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,13 +12,15 @@ import (
 )
 
 type TxManager struct {
+	logger          *slog.Logger
 	pool            *pgxpool.Pool
 	rollbackTimeout time.Duration
 }
 
-func NewTxManager(pool *pgxpool.Pool, timeout time.Duration) *TxManager {
+func NewTxManager(pool *pgxpool.Pool, timeout time.Duration, logger *slog.Logger) *TxManager {
 	return &TxManager{
 		pool:            pool,
+		logger:          logger,
 		rollbackTimeout: timeout,
 	}
 }
@@ -44,7 +46,7 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 		defer cancel()
 		err := tx.Rollback(rollbackCtx)
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			log.Printf("rollback failed: %v", err)
+			m.logger.ErrorContext(rollbackCtx, "rollback failed", "error", err)
 		}
 	}()
 

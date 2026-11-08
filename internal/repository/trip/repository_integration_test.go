@@ -5,15 +5,17 @@ package trip_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 	"github.com/Zvoook/TripGo_Danilov/internal/infra/postgres"
 	triprepo "github.com/Zvoook/TripGo_Danilov/internal/repository/trip"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestTripRepositoryTransaction(t *testing.T) {
@@ -34,7 +36,7 @@ func TestTripRepositoryTransaction(t *testing.T) {
 	}
 
 	repo := triprepo.NewRepository(pool, 3*time.Second)
-	tx := postgres.NewTxManager(pool, 3*time.Second)
+	tx := postgres.NewTxManager(pool, 3*time.Second, slog.New(slog.DiscardHandler))
 	rollback := errors.New("request rollback")
 	cases := []struct {
 		name      string

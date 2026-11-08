@@ -11,11 +11,12 @@ import (
 
 	config "github.com/Zvoook/TripGo_Danilov/internal/config"
 	"github.com/Zvoook/TripGo_Danilov/internal/container"
+	"github.com/Zvoook/TripGo_Danilov/internal/infra/telemetry"
 )
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Println(err)
+		telemetry.NewLogger("info", os.Stdout).Error("service failed", "error", err)
 		os.Exit(1)
 	}
 }
@@ -33,39 +34,33 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
 	}
+	app.Logger.InfoContext(signalCtx, "service starting", "address", cfg.HTTPAddr)
+	defer app.Logger.Info("service stopped")
 	defer app.CloseConnection()
-	defer app.CloseServer()
 
 	serverErr := make(chan error, 1)
-	//TODO: понять надо ли пробрасывать канал с ошибкой внутрь container.New()
-
 	go func() {
 		serverErr <- app.Server.ListenAndServe()
 	}()
 
+	var runErr error
 	select {
 	case err := <-serverErr:
 		if !errors.Is(err, http.ErrServerClosed) {
-			fmt.Println("Server falls due to server error")
-			return fmt.Errorf("server issue: %w", err)
-		} else {
-			return nil
+			runErr = fmt.Errorf("serve HTTP: %w", err)
 		}
 	case <-signalCtx.Done():
-		fmt.Printf("\nShutdown the server...\n")
-		shutdownCtx, cancel := context.WithTimeout(
-			context.Background(),
-			cfg.ShutdownTimeout,
-		)
-		defer cancel()
-		err := app.Server.Shutdown(shutdownCtx)
-		if err != nil {
-			app.CloseServer()
-			fmt.Println("Server stop were interrupted due to shutdown error")
-			return fmt.Errorf("server issue: %w", err)
-		} else {
-			fmt.Println("Server stop successfully")
-		}
 	}
-	return nil
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+	defer cancel()
+
+	shutdownErr := app.Server.Shutdown(shutdownCtx)
+	if shutdownErr != nil {
+		shutdownErr = errors.Join(shutdownErr, app.CloseServer())
+	}
+	if err := app.ShutdownTelemetry(shutdownCtx); err != nil {
+		app.Logger.ErrorContext(shutdownCtx, "shutdown telemetry failed", "error", err)
+	}
+	return errors.Join(runErr, shutdownErr)
 }
