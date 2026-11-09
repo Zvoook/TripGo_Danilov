@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	config "github.com/Zvoook/TripGo_Danilov/internal/config"
+	"github.com/jackc/pgx/v5"
 	pgxpool "github.com/jackc/pgx/v5/pgxpool"
+
+	config "github.com/Zvoook/TripGo_Danilov/internal/config"
 )
 
-func NewPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
+func NewPool(ctx context.Context, cfg config.Config, tracer pgx.QueryTracer) (*pgxpool.Pool, error) {
 	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid DATABASE_URL")
@@ -17,9 +19,10 @@ func NewPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
 	poolCfg.MinConns = cfg.DatabaseMinConns
 	poolCfg.MaxConnLifetime = cfg.DatabaseMaxConnLifetime
 	poolCfg.ConnConfig.ConnectTimeout = cfg.DatabaseConnectTimeout
+	poolCfg.ConnConfig.Tracer = tracer
 	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
-		return nil, fmt.Errorf("Pool error %w", err)
+		return nil, fmt.Errorf("create pool: %w", err)
 	}
 	pingCtx, cancel := context.WithTimeout(ctx, cfg.DatabaseConnectTimeout)
 	defer cancel()

@@ -7,17 +7,14 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/Zvoook/TripGo_Danilov/internal/postgres"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
 
-var ErrNotFound = errors.New("trip not found")
-var ErrDriverBusy = errors.New("driver is busy")
-var ErrTripCompleted = errors.New("trip already completed")
-var ErrInvalidInput = errors.New("invalid trip input")
+	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
+	"github.com/Zvoook/TripGo_Danilov/internal/infra/postgres"
+)
 
 type Repository struct {
 	pool         *pgxpool.Pool
@@ -31,7 +28,7 @@ func NewRepository(pool *pgxpool.Pool, timeout time.Duration) *Repository {
 	}
 }
 
-func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (Trip, error) {
+func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (tripdomain.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -43,7 +40,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (Trip, error) {
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return Trip{}, fmt.Errorf("build select: %w", err)
+		return tripdomain.Trip{}, fmt.Errorf("build select: %w", err)
 	}
 
 	executor := postgres.ExecutorFromContext(queryCtx, r.pool)
@@ -52,7 +49,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (Trip, error) {
 }
 
 // Called inside Do: the lock must remain held until the update is committed.
-func (r *Repository) GetForUpdate(ctx context.Context, id uuid.UUID) (Trip, error) {
+func (r *Repository) GetForUpdate(ctx context.Context, id uuid.UUID) (tripdomain.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -65,7 +62,7 @@ func (r *Repository) GetForUpdate(ctx context.Context, id uuid.UUID) (Trip, erro
 		Suffix("FOR UPDATE").
 		PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return Trip{}, fmt.Errorf("build locked select: %w", err)
+		return tripdomain.Trip{}, fmt.Errorf("build locked select: %w", err)
 	}
 
 	executor := postgres.ExecutorFromContext(queryCtx, r.pool)
@@ -74,8 +71,8 @@ func (r *Repository) GetForUpdate(ctx context.Context, id uuid.UUID) (Trip, erro
 }
 
 // Both SELECT queries return the columns in this order.
-func scanTrip(row pgx.Row) (Trip, error) {
-	var result Trip
+func scanTrip(row pgx.Row) (tripdomain.Trip, error) {
+	var result tripdomain.Trip
 	err := row.Scan(
 		&result.ID,
 		&result.UserID,
@@ -92,14 +89,21 @@ func scanTrip(row pgx.Row) (Trip, error) {
 		&result.FinishedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Trip{}, ErrNotFound
+		return tripdomain.Trip{}, tripdomain.ErrTripNotFound
 	} else if err != nil {
-		return Trip{}, fmt.Errorf("read trip: %w", err)
+		return tripdomain.Trip{}, fmt.Errorf("read trip: %w", err)
+	}
+	result.StartedAt = result.StartedAt.UTC()
+	result.CreatedAt = result.CreatedAt.UTC()
+	result.UpdatedAt = result.UpdatedAt.UTC()
+	if result.FinishedAt != nil {
+		finishedAt := result.FinishedAt.UTC()
+		result.FinishedAt = &finishedAt
 	}
 	return result, nil
 }
 
-func (r *Repository) Insert(ctx context.Context, value Trip) error {
+func (r *Repository) Insert(ctx context.Context, value tripdomain.Trip) error {
 	insertCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -132,7 +136,7 @@ func (r *Repository) Insert(ctx context.Context, value Trip) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.Code == "23505" && pgErr.ConstraintName == "one_active_trip_per_driver_idx" {
-			return ErrDriverBusy
+			return tripdomain.ErrDriverBusy
 		}
 	}
 	if err != nil {
@@ -144,14 +148,13 @@ func (r *Repository) Insert(ctx context.Context, value Trip) error {
 func (r *Repository) AddHistory(
 	ctx context.Context,
 	tripID uuid.UUID,
-	from *Status,
-	to Status,
+	from *tripdomain.Status,
+	to tripdomain.Status,
 	changedAt time.Time,
 ) error {
 	execCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
-	// nil becomes SQL NULL for the first entry in the trip history.
 	var previous any
 	if from != nil {
 		previous = string(*from)
@@ -185,10 +188,10 @@ func (r *Repository) Complete(ctx context.Context, id uuid.UUID, at time.Time) e
 	defer cancel()
 
 	query, args, err := sq.Update("trips").
-		Set("status", string(StatusCompleted)).
+		Set("status", string(tripdomain.StatusCompleted)).
 		Set("finished_at", at).
 		Set("updated_at", at).
-		Where(sq.Eq{"id": id, "status": string(StatusActive)}).
+		Where(sq.Eq{"id": id, "status": string(tripdomain.StatusActive)}).
 		PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return fmt.Errorf("build completion: %w", err)
@@ -203,4 +206,16 @@ func (r *Repository) Complete(ctx context.Context, id uuid.UUID, at time.Time) e
 		return fmt.Errorf("complete trip: expected one active trip")
 	}
 	return nil
+}
+
+func (r *Repository) CountActive(ctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	var count int64
+	const query = "SELECT count(*) FROM trips WHERE status = $1"
+	if err := r.pool.QueryRow(ctx, query, tripdomain.StatusActive).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count active trips: %w", err)
+	}
+	return count, nil
 }

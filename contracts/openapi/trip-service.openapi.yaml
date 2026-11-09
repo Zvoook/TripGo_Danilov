@@ -260,31 +260,50 @@ components:
       - active
       - completed
     Trip:
-      allOf:
-      - $ref: '#/components/schemas/TripData'
-      - type: object
-        additionalProperties: false
-        required:
-        - id
-        - status
-        - started_at
-        properties:
-          id:
-            type: string
-            format: uuid
-          status:
-            $ref: '#/components/schemas/TripStatus'
-          started_at:
-            type: string
-            format: date-time
-          finished_at:
-            type: string
-            format: date-time
-            nullable: true
-          last_position_at:
-            type: string
-            format: date-time
-            nullable: true
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      - driver_id
+      - start_point
+      - end_point
+      - price
+      - id
+      - status
+      - started_at
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        start_point:
+          $ref: '#/components/schemas/Coordinates'
+        end_point:
+          $ref: '#/components/schemas/Coordinates'
+        price:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1450
+          description: 'Стоимость поездки в целых рублях. Это учебное упрощение: копейки не используются.'
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TripStatus'
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_position_at:
+          type: string
+          format: date-time
+          nullable: true
     PositionData:
       type: object
       additionalProperties: false
@@ -299,20 +318,26 @@ components:
           format: date-time
           description: Время фиксации координаты на мобильном устройстве.
     TripPosition:
-      allOf:
-      - $ref: '#/components/schemas/PositionData'
-      - type: object
-        additionalProperties: false
-        required:
-        - id
-        - trip_id
-        properties:
-          id:
-            type: integer
-            format: int64
-          trip_id:
-            type: string
-            format: uuid
+      type: object
+      additionalProperties: false
+      required:
+      - coordinates
+      - recorded_at
+      - id
+      - trip_id
+      properties:
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        recorded_at:
+          type: string
+          format: date-time
+          description: Время фиксации координаты на мобильном устройстве.
+        id:
+          type: integer
+          format: int64
+        trip_id:
+          type: string
+          format: uuid
     TripPositionsResponse:
       type: object
       additionalProperties: false
