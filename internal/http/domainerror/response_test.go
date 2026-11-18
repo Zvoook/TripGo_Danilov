@@ -15,11 +15,45 @@ func TestProblemMapping(t *testing.T) {
 		status int32
 		code   string
 	}{
-		{"invalid request", tripdomain.ErrInvalidRequest, http.StatusBadRequest, "invalid_request"},
-		{"trip not found", tripdomain.ErrTripNotFound, http.StatusNotFound, "trip_not_found"},
-		{"driver busy", tripdomain.ErrDriverBusy, http.StatusConflict, "driver_busy"},
-		{"trip completed", tripdomain.ErrTripCompleted, http.StatusConflict, "trip_completed"},
-		{"internal error", errors.New("database unavailable"), http.StatusInternalServerError, "internal_error"},
+		{
+			"invalid request",
+			tripdomain.ErrInvalidRequest,
+			http.StatusBadRequest,
+			"invalid_request",
+		},
+		{
+			"invalid price",
+			tripdomain.ValidationError{
+				Field:   "price",
+				Message: "must be nonnegative",
+			},
+			http.StatusBadRequest,
+			"invalid_request",
+		},
+		{
+			"trip not found",
+			tripdomain.ErrTripNotFound,
+			http.StatusNotFound,
+			"trip_not_found",
+		},
+		{
+			"driver busy",
+			tripdomain.ErrDriverBusy,
+			http.StatusConflict,
+			"driver_busy",
+		},
+		{
+			"trip completed",
+			tripdomain.ErrTripCompleted,
+			http.StatusConflict,
+			"trip_completed",
+		},
+		{
+			"internal error",
+			errors.New("database unavailable"),
+			http.StatusInternalServerError,
+			"internal_error",
+		},
 	}
 
 	for _, tc := range cases {

@@ -11,12 +11,12 @@ import (
 )
 
 type Handler struct {
-	createUsecase creator
+	tripCreator tripCreator
 }
 
-func NewHandler(createUsecase creator) *Handler {
+func NewHandler(tripCreator tripCreator) *Handler {
 	return &Handler{
-		createUsecase: createUsecase,
+		tripCreator: tripCreator,
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *Handler) CreateTrip(
 		return
 	}
 
-	result, err := h.createUsecase.Create(r.Context(), input)
+	result, err := h.tripCreator.Create(r.Context(), input)
 	if err != nil {
 		problem := domainerror.Problem(err)
 		if problem.Status >= http.StatusInternalServerError {

@@ -14,7 +14,7 @@ func WriteProblem(
 	r *http.Request,
 	problem generated.Problem,
 ) {
-	problem.Instance = &(r.URL.Path)
+	problem.Instance = &r.URL.Path
 
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(int(problem.Status))

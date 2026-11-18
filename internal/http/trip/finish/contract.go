@@ -1,4 +1,4 @@
-//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test -mock_names finisher=MockFinisher
+//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test -mock_names tripFinisher=MockTripFinisher
 
 package finish
 
@@ -10,6 +10,6 @@ import (
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 )
 
-type finisher interface {
+type tripFinisher interface {
 	Finish(context.Context, uuid.UUID) (tripdomain.Trip, error)
 }

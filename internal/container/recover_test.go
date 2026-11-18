@@ -22,7 +22,11 @@ func TestRecover(t *testing.T) {
 	var output bytes.Buffer
 	logger := telemetry.NewLogger("info", &output)
 	router := chi.NewRouter()
-	router.Use(middleware.Recover(logger), middleware.Tracing(provider), middleware.Logging(logger))
+	router.Use(
+		middleware.Recover(logger),
+		middleware.Tracing(provider),
+		middleware.Logging(logger),
+	)
 	router.Get("/panic", func(http.ResponseWriter, *http.Request) {
 		panic("example")
 	})

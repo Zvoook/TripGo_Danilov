@@ -12,6 +12,8 @@ import (
 var ErrInternal = errors.New("internal error")
 
 func Problem(err error) api.Problem {
+	var validationErr tripdomain.ValidationError
+
 	problem := api.Problem{}
 	detail := err.Error()
 	switch {
@@ -33,7 +35,7 @@ func Problem(err error) api.Problem {
 			Status: http.StatusConflict,
 			Code:   "driver_busy",
 		}
-	case errors.Is(err, tripdomain.ErrInvalidRequest):
+	case errors.As(err, &validationErr), errors.Is(err, tripdomain.ErrInvalidRequest):
 		problem = api.Problem{
 			Title:  "Invalid request",
 			Status: http.StatusBadRequest,

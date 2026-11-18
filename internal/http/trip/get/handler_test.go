@@ -22,7 +22,7 @@ import (
 func TestGetTrip_NotFound(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	ctrl := gomock.NewController(t)
-	usecase := NewMockGetter(ctrl)
+	usecase := NewMockTripGetter(ctrl)
 	usecase.EXPECT().
 		Get(gomock.Any(), id).
 		Return(tripdomain.Trip{}, tripdomain.ErrTripNotFound).
@@ -50,7 +50,7 @@ func TestGetTrip_NotFound(t *testing.T) {
 func TestGetTrip_OK(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	ctrl := gomock.NewController(t)
-	usecase := NewMockGetter(ctrl)
+	usecase := NewMockTripGetter(ctrl)
 
 	foundTrip := tripdomain.Trip{
 		ID:             id,
@@ -99,7 +99,7 @@ func TestGetTrip_OK(t *testing.T) {
 func TestGetTrip_InternalError(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	ctrl := gomock.NewController(t)
-	usecase := NewMockGetter(ctrl)
+	usecase := NewMockTripGetter(ctrl)
 
 	const privateMessage = "db-private-marker"
 
@@ -132,7 +132,7 @@ func TestGetTrip_InternalError(t *testing.T) {
 
 func TestGetTripThroughRouter(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
-	usecase := NewMockGetter(gomock.NewController(t))
+	usecase := NewMockTripGetter(gomock.NewController(t))
 	usecase.EXPECT().Get(gomock.Any(), id).
 		Return(tripdomain.Trip{ID: id, Status: tripdomain.StatusActive}, nil)
 

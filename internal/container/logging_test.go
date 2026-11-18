@@ -16,7 +16,8 @@ import (
 	"github.com/Zvoook/TripGo_Danilov/internal/infra/telemetry"
 )
 
-func TestLogging(t *testing.T) {
+// По trace_id и span_id из лога запроса можно найти спан этого запроса в трассировке.
+func TestRequestLogContainsMatchingTraceAndSpanIDs(t *testing.T) {
 	recorder := tracetest.NewSpanRecorder()
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
 	t.Cleanup(func() {

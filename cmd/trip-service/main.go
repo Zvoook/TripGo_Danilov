@@ -11,12 +11,11 @@ import (
 
 	config "github.com/Zvoook/TripGo_Danilov/internal/config"
 	"github.com/Zvoook/TripGo_Danilov/internal/container"
-	"github.com/Zvoook/TripGo_Danilov/internal/infra/telemetry"
 )
 
 func main() {
 	if err := run(); err != nil {
-		telemetry.NewLogger("info", os.Stdout).Error("service failed", "error", err)
+		container.NewStartupLogger().Error("service failed", "error", err)
 		os.Exit(1)
 	}
 }

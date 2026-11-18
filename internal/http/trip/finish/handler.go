@@ -11,12 +11,12 @@ import (
 )
 
 type Handler struct {
-	finishUsecase finisher
+	tripFinisher tripFinisher
 }
 
-func NewHandler(finishUsecase finisher) *Handler {
+func NewHandler(tripFinisher tripFinisher) *Handler {
 	return &Handler{
-		finishUsecase: finishUsecase,
+		tripFinisher: tripFinisher,
 	}
 }
 
@@ -25,7 +25,7 @@ func (h *Handler) FinishTrip(
 	r *http.Request,
 	tripId generated.TripId,
 ) {
-	result, err := h.finishUsecase.Finish(r.Context(), tripId)
+	result, err := h.tripFinisher.Finish(r.Context(), tripId)
 	if err != nil {
 		problem := domainerror.Problem(err)
 		if problem.Status >= http.StatusInternalServerError {

@@ -11,19 +11,19 @@ import (
 )
 
 type Handler struct {
-	getUsecase getter
+	tripGetter tripGetter
 }
 
-func NewHandler(getUsecase getter) *Handler {
+func NewHandler(tripGetter tripGetter) *Handler {
 	return &Handler{
-		getUsecase: getUsecase,
+		tripGetter: tripGetter,
 	}
 }
 
 func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId generated.TripId) {
 	var response generated.Trip
 
-	result, err := h.getUsecase.Get(r.Context(), tripId)
+	result, err := h.tripGetter.Get(r.Context(), tripId)
 	w.Header().Set("Content-type", "application/json")
 
 	if err != nil {

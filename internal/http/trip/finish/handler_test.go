@@ -18,7 +18,7 @@ import (
 func TestFinishTrip_OK(t *testing.T) {
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	finishedAt := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
-	usecase := NewMockFinisher(gomock.NewController(t))
+	usecase := NewMockTripFinisher(gomock.NewController(t))
 	usecase.EXPECT().Finish(gomock.Any(), id).Return(tripdomain.Trip{
 		ID:         id,
 		Status:     tripdomain.StatusCompleted,
@@ -58,7 +58,7 @@ func TestFinishTrip_Errors(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
-			usecase := NewMockFinisher(gomock.NewController(t))
+			usecase := NewMockTripFinisher(gomock.NewController(t))
 			usecase.EXPECT().Finish(gomock.Any(), id).
 				Return(tripdomain.Trip{}, tc.err).Times(1)
 

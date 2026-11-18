@@ -44,7 +44,7 @@ func newCreateRequest(body string) *http.Request {
 func TestCreateTrip_ValidJSON(t *testing.T) {
 	input := expectedCreateInput()
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
-	usecase := NewMockCreator(gomock.NewController(t))
+	usecase := NewMockTripCreator(gomock.NewController(t))
 	usecase.EXPECT().Create(gomock.Any(), input).Return(tripdomain.Trip{
 		ID:             id,
 		UserID:         input.UserID,
@@ -86,7 +86,7 @@ func TestCreateTrip_ValidJSON(t *testing.T) {
 }
 
 func TestCreateTrip_InvalidJSON(t *testing.T) {
-	usecase := NewMockCreator(gomock.NewController(t))
+	usecase := NewMockTripCreator(gomock.NewController(t))
 
 	rec := httptest.NewRecorder()
 	create.NewHandler(usecase).CreateTrip(rec, newCreateRequest("{"), api.CreateTripParams{})
@@ -95,7 +95,7 @@ func TestCreateTrip_InvalidJSON(t *testing.T) {
 }
 
 func TestCreateTrip_Conflict(t *testing.T) {
-	usecase := NewMockCreator(gomock.NewController(t))
+	usecase := NewMockTripCreator(gomock.NewController(t))
 	usecase.EXPECT().Create(gomock.Any(), expectedCreateInput()).
 		Return(tripdomain.Trip{}, tripdomain.ErrDriverBusy).Times(1)
 

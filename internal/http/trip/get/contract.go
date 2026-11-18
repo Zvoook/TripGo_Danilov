@@ -1,4 +1,4 @@
-//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test -mock_names getter=MockGetter
+//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test -mock_names tripGetter=MockTripGetter
 package get
 
 import (
@@ -9,6 +9,6 @@ import (
 	tripdomain "github.com/Zvoook/TripGo_Danilov/internal/domain/trip"
 )
 
-type getter interface {
+type tripGetter interface {
 	Get(context.Context, uuid.UUID) (tripdomain.Trip, error)
 }

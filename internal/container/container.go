@@ -36,6 +36,11 @@ type App struct {
 	shutdownTelemetry func(context.Context) error
 }
 
+// NewStartupLogger нужен для ошибок, которые могут произойти до сборки App.
+func NewStartupLogger() *slog.Logger {
+	return telemetry.NewLogger("info", os.Stdout)
+}
+
 func (a *App) ShutdownTelemetry(ctx context.Context) error {
 	return a.shutdownTelemetry(ctx)
 }

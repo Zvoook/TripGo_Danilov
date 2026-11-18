@@ -11,6 +11,8 @@ import (
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
 )
 
+// recoveryKey служит ключом для указателя на переменную ctx в Recover.
+// Tracing записывает через этот указатель контекст со спаном текущего запроса.
 type recoveryKey struct{}
 
 func Recover(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -29,7 +31,6 @@ func Recover(logger *slog.Logger) func(http.Handler) http.Handler {
 					}
 				}
 			}()
-			// Tracing updates this local context once the server span has started.
 			next.ServeHTTP(wrapped, r.WithContext(context.WithValue(ctx, recoveryKey{}, &ctx)))
 		})
 	}
