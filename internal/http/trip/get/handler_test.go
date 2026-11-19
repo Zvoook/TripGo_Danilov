@@ -136,7 +136,7 @@ func TestGetTripThroughRouter(t *testing.T) {
 	usecase.EXPECT().Get(gomock.Any(), id).
 		Return(tripdomain.Trip{ID: id, Status: tripdomain.StatusActive}, nil)
 
-	handler := transport.NewHandler(nil, time.Second, get.NewHandler(usecase), nil, nil)
+	handler := transport.NewHandler(nil, time.Second, get.NewHandler(usecase), nil, nil, nil, nil)
 	router := generated.HandlerWithOptions(handler, generated.ChiServerOptions{
 		ErrorHandlerFunc: domainerror.HandleParameterError,
 	})

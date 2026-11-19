@@ -11,6 +11,8 @@ import (
 	create "github.com/Zvoook/TripGo_Danilov/internal/http/trip/create"
 	finish "github.com/Zvoook/TripGo_Danilov/internal/http/trip/finish"
 	get "github.com/Zvoook/TripGo_Danilov/internal/http/trip/get"
+	"github.com/Zvoook/TripGo_Danilov/internal/http/trip/position/list"
+	save "github.com/Zvoook/TripGo_Danilov/internal/http/trip/position/save"
 )
 
 type Handler struct {
@@ -19,6 +21,8 @@ type Handler struct {
 	getUsecase    *get.Handler
 	createUsecase *create.Handler
 	finishUsecase *finish.Handler
+	saveUsecase   *save.Handler
+	listUsecase   *list.Handler
 }
 
 func NewHandler(
@@ -27,6 +31,8 @@ func NewHandler(
 	getUC *get.Handler,
 	createUC *create.Handler,
 	finishUC *finish.Handler,
+	saveUC *save.Handler,
+	listUC *list.Handler,
 ) *Handler {
 	return &Handler{
 		pool:          pool,
@@ -34,6 +40,8 @@ func NewHandler(
 		getUsecase:    getUC,
 		createUsecase: createUC,
 		finishUsecase: finishUC,
+		saveUsecase:   saveUC,
+		listUsecase:   listUC,
 	}
 }
 
@@ -78,4 +86,12 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params gene
 
 func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId generated.TripId) {
 	h.finishUsecase.FinishTrip(w, r, tripId)
+}
+
+func (h *Handler) CreateTripPosition(w http.ResponseWriter, r *http.Request, tripId generated.TripId) {
+	h.saveUsecase.CreateTripPosition(w, r, tripId)
+}
+
+func (h *Handler) ListTripPositions(w http.ResponseWriter, r *http.Request, tripId generated.TripId) {
+	h.listUsecase.ListTripPositions(w, r, tripId)
 }

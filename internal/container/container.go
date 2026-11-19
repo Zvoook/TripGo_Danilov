@@ -21,12 +21,16 @@ import (
 	httpcreate "github.com/Zvoook/TripGo_Danilov/internal/http/trip/create"
 	httpfinish "github.com/Zvoook/TripGo_Danilov/internal/http/trip/finish"
 	httpget "github.com/Zvoook/TripGo_Danilov/internal/http/trip/get"
+	httplist "github.com/Zvoook/TripGo_Danilov/internal/http/trip/position/list"
+	httpsave "github.com/Zvoook/TripGo_Danilov/internal/http/trip/position/save"
 	"github.com/Zvoook/TripGo_Danilov/internal/infra/postgres"
 	"github.com/Zvoook/TripGo_Danilov/internal/infra/telemetry"
 	"github.com/Zvoook/TripGo_Danilov/internal/repository/trip"
 	create "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/create"
 	finish "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/finish"
 	get "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/get"
+	list "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/position/list"
+	save "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/position/save"
 )
 
 type App struct {
@@ -107,13 +111,28 @@ func newApp(
 
 	transactions := postgres.NewTxManager(pool, cfg.DatabaseQueryTimeout, logger)
 
-	createUC := create.New(repository, transactions, cfg.OperationTimeout)
 	getUC := get.New(repository, cfg.OperationTimeout)
+	createUC := create.New(repository, transactions, cfg.OperationTimeout)
 	finishUC := finish.New(repository, transactions, cfg.OperationTimeout)
+	saveUC := save.New(repository, transactions, cfg.OperationTimeout)
+	listUC := list.New(repository, cfg.OperationTimeout)
 
 	getHandler := httpget.NewHandler(getUC)
-	createHandler := httpcreate.NewHandler(observedCreate{run: createUC.Create, event: created})
-	finishHandler := httpfinish.NewHandler(observedFinish{run: finishUC.Finish, event: completed})
+	createHandler := httpcreate.NewHandler(
+		observedCreate{
+			run:   createUC.Create,
+			event: created,
+		},
+	)
+	finishHandler := httpfinish.NewHandler(
+		observedFinish{
+			run:   finishUC.Finish,
+			event: completed,
+		},
+	)
+
+	saveHandler := httpsave.NewHandler(saveUC)
+	listHandler := httplist.NewHandler(listUC)
 
 	handler := httptransport.NewHandler(
 		pool,
@@ -121,6 +140,8 @@ func newApp(
 		getHandler,
 		createHandler,
 		finishHandler,
+		saveHandler,
+		listHandler,
 	)
 
 	router.Use(middleware.Recover(logger))

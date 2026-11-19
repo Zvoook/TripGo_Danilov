@@ -39,7 +39,7 @@ func TestHealthEndpoints(t *testing.T) {
 					return tc.pingErr
 				})
 			}
-			handler := transport.NewHandler(checker, time.Second, nil, nil, nil)
+			handler := transport.NewHandler(checker, time.Second, nil, nil, nil, nil, nil)
 			router := api.HandlerWithOptions(handler, api.ChiServerOptions{
 				ErrorHandlerFunc: domainerror.HandleParameterError,
 			})
@@ -65,7 +65,7 @@ func TestHealthEndpoints(t *testing.T) {
 
 func TestRouterRejectsInvalidTripID(t *testing.T) {
 	// Invalid path parameters must be rejected before dispatch to the trip handlers.
-	handler := transport.NewHandler(nil, time.Second, nil, nil, nil)
+	handler := transport.NewHandler(nil, time.Second, nil, nil, nil, nil, nil)
 	router := api.HandlerWithOptions(handler, api.ChiServerOptions{
 		ErrorHandlerFunc: domainerror.HandleParameterError,
 	})
