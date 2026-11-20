@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,12 @@ type Config struct {
 	HTTPReadTimeout         time.Duration
 	HTTPWriteTimeout        time.Duration
 	HTTPIdleTimeout         time.Duration
+	PositionCheckInterval   time.Duration
+	PositionStaleAfter      time.Duration
+	PositionWorkers         int32
+	PositionQueueSize       int32
+	PushHTTPURL             string
+	PushRequestTimeout      time.Duration
 }
 
 func LoadInt32(name string, fallback int32) (int32, error) {
@@ -149,5 +156,44 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.HTTPIdleTimeout = idle_timeout
+
+	position_check_interval, err := LoadTime("POSITION_CHECK_INTERVAL", 30*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionCheckInterval = position_check_interval
+
+	position_stale_after, err := LoadTime("POSITION_STALE_AFTER", 60*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionStaleAfter = position_stale_after
+
+	position_workers, err := LoadInt32("POSITION_WORKERS", 4)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionWorkers = position_workers
+
+	position_queue_size, err := LoadInt32("POSITION_QUEUE_SIZE", 100)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionQueueSize = position_queue_size
+	if cfg.PositionWorkers == 0 || cfg.PositionQueueSize == 0 {
+		return Config{}, fmt.Errorf("POSITION_WORKERS and POSITION_QUEUE_SIZE must be positive")
+	}
+
+	cfg.PushHTTPURL = strings.TrimSpace(os.Getenv("PUSH_HTTP_URL"))
+	if cfg.PushHTTPURL == "" {
+		return Config{}, fmt.Errorf("PUSH_HTTP_URL is required")
+	}
+
+	push_request_timeout, err := LoadTime("PUSH_REQUEST_TIMEOUT", 1*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PushRequestTimeout = push_request_timeout
+
 	return cfg, nil
 }

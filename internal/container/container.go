@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/Zvoook/TripGo_Danilov/internal/config"
+	"github.com/Zvoook/TripGo_Danilov/internal/gateway/push"
 	generated "github.com/Zvoook/TripGo_Danilov/internal/generated"
 	httptransport "github.com/Zvoook/TripGo_Danilov/internal/http"
 	"github.com/Zvoook/TripGo_Danilov/internal/http/domainerror"
@@ -31,12 +32,15 @@ import (
 	get "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/get"
 	list "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/position/list"
 	save "github.com/Zvoook/TripGo_Danilov/internal/usecase/trip/position/save"
+	"github.com/Zvoook/TripGo_Danilov/internal/worker/positions"
 )
 
 type App struct {
 	Logger            *slog.Logger
 	Server            *http.Server
 	pool              *pgxpool.Pool
+	positionService   *positions.Service
+	pushClient        *push.Client
 	shutdownTelemetry func(context.Context) error
 }
 
@@ -131,7 +135,41 @@ func newApp(
 		},
 	)
 
-	saveHandler := httpsave.NewHandler(saveUC)
+	pushClient := push.New(
+		cfg.PushHTTPURL,
+		cfg.PushRequestTimeout,
+	)
+	saved, err := meter.Int64Counter("tripgo.positions.saved")
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	positionService, err := positions.Start(
+		context.WithoutCancel(ctx),
+		positions.Settings{
+			CheckInterval:  cfg.PositionCheckInterval,
+			StaleAfter:     cfg.PositionStaleAfter,
+			RequestTimeout: cfg.PushRequestTimeout,
+			Workers:        int(cfg.PositionWorkers),
+			QueueSize:      int(cfg.PositionQueueSize),
+		},
+		repository,
+		pushClient,
+		logger,
+		meter,
+		provider.Tracer("trip-service"),
+	)
+	if err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("start position workers: %w", err)
+	}
+	saveHandler := httpsave.NewHandler(
+		observedSave{
+			run:    saveUC.Save,
+			cancel: positionService.Cancel,
+			saved:  saved,
+		},
+	)
 	listHandler := httplist.NewHandler(listUC)
 
 	handler := httptransport.NewHandler(
@@ -169,8 +207,15 @@ func newApp(
 		Logger:            logger,
 		Server:            server,
 		pool:              pool,
+		positionService:   positionService,
+		pushClient:        pushClient,
 		shutdownTelemetry: shutdown,
 	}, nil
+}
+
+func (a *App) ShutdownPositions(ctx context.Context) error {
+	defer a.pushClient.CloseIdleConnections()
+	return a.positionService.Shutdown(ctx)
 }
 
 func (a *App) CloseConnection() {

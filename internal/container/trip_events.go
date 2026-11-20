@@ -48,6 +48,21 @@ type observedFinish struct {
 	event tripEvent
 }
 
+type observedSave struct {
+	run    func(context.Context, tripdomain.Position) (tripdomain.Position, error)
+	cancel func(uuid.UUID)
+	saved  metric.Int64Counter
+}
+
+func (u observedSave) Save(ctx context.Context, input tripdomain.Position) (tripdomain.Position, error) {
+	position, err := u.run(ctx, input)
+	if err == nil {
+		u.cancel(position.TripID)
+		u.saved.Add(ctx, 1)
+	}
+	return position, err
+}
+
 func (u observedFinish) Finish(ctx context.Context, id uuid.UUID) (tripdomain.Trip, error) {
 	trip, err := u.run(ctx, id)
 	if err == nil {

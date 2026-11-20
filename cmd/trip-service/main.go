@@ -58,6 +58,7 @@ func run() error {
 	if shutdownErr != nil {
 		shutdownErr = errors.Join(shutdownErr, app.CloseServer())
 	}
+	shutdownErr = errors.Join(shutdownErr, app.ShutdownPositions(shutdownCtx))
 	if err := app.ShutdownTelemetry(shutdownCtx); err != nil {
 		app.Logger.ErrorContext(shutdownCtx, "shutdown telemetry failed", "error", err)
 	}
