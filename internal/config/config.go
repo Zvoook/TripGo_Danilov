@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -17,28 +18,39 @@ type Config struct {
 	DatabaseMaxConnLifetime time.Duration
 	DatabaseConnectTimeout  time.Duration
 	DatabaseQueryTimeout    time.Duration
+	OperationTimeout        time.Duration
 	HTTPReadHeaderTimeout   time.Duration
 	HTTPReadTimeout         time.Duration
 	HTTPWriteTimeout        time.Duration
 	HTTPIdleTimeout         time.Duration
+	PositionCheckInterval   time.Duration
+	PositionStaleAfter      time.Duration
+	PositionWorkers         int32
+	PositionQueueSize       int32
+	PushHTTPURL             string
+	PushRequestTimeout      time.Duration
 }
 
-func LoadInt32(name string) (int32, error) {
-	var err error
+func LoadInt32(name string, fallback int32) (int32, error) {
 	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback, nil
+	}
 	data, err := strconv.ParseInt(raw, 10, 32)
 	if err != nil {
 		return -1, fmt.Errorf("%s: %w", name, err)
 	}
 	if data < 0 {
-		return -1, fmt.Errorf("%s must be positive", name)
+		return -1, fmt.Errorf("%s must be nonnegative", name)
 	}
 	return int32(data), nil
 }
 
-func LoadTime(name string) (time.Duration, error) {
-	var err error
+func LoadTime(name string, fallback time.Duration) (time.Duration, error) {
 	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback, nil
+	}
 	data, err := time.ParseDuration(raw)
 	if err != nil {
 		return -1, fmt.Errorf("%s: %w", name, err)
@@ -54,7 +66,7 @@ func Load() (Config, error) {
 
 	cfg.HTTPAddr = os.Getenv("HTTP_ADDR")
 	if cfg.HTTPAddr == "" {
-		return Config{}, fmt.Errorf("HTTP_ADDR is required")
+		cfg.HTTPAddr = ":8080"
 	}
 
 	cfg.DatabaseURL = os.Getenv("DATABASE_URL")
@@ -63,28 +75,28 @@ func Load() (Config, error) {
 	}
 
 	cfg.Loglevel = os.Getenv("LOG_LEVEL")
+	if cfg.Loglevel == "" {
+		cfg.Loglevel = "info"
+	}
 	switch cfg.Loglevel {
-	case "debug":
-	case "info":
-	case "warn":
-	case "error":
+	case "debug", "info", "warn", "error":
 	default:
-		return Config{}, fmt.Errorf("LOG_LEVEL is required")
+		return Config{}, fmt.Errorf("LOG_LEVEL must be debug, info, warn or error")
 	}
 
-	timeout, err := LoadTime("SHUTDOWN_TIMEOUT")
+	timeout, err := LoadTime("SHUTDOWN_TIMEOUT", 10*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.ShutdownTimeout = timeout
 
-	max_conns, err := LoadInt32("DATABASE_MAX_CONNS")
+	max_conns, err := LoadInt32("DATABASE_MAX_CONNS", 10)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.DatabaseMaxConns = max_conns
 
-	min_conns, err := LoadInt32("DATABASE_MIN_CONNS")
+	min_conns, err := LoadInt32("DATABASE_MIN_CONNS", 2)
 	if err != nil {
 		return Config{}, err
 	}
@@ -97,46 +109,91 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATABASE_MAX_CONNS must be greater than zero")
 	}
 
-	max_lifetime, err := LoadTime("DATABASE_MAX_CONN_LIFETIME")
+	max_lifetime, err := LoadTime("DATABASE_MAX_CONN_LIFETIME", 30*time.Minute)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.DatabaseMaxConnLifetime = max_lifetime
 
-	conn_timeout, err := LoadTime("DATABASE_CONNECT_TIMEOUT")
+	conn_timeout, err := LoadTime("DATABASE_CONNECT_TIMEOUT", 5*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.DatabaseConnectTimeout = conn_timeout
 
-	query_timeout, err := LoadTime("DATABASE_QUERY_TIMEOUT")
+	query_timeout, err := LoadTime("DATABASE_QUERY_TIMEOUT", 3*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.DatabaseQueryTimeout = query_timeout
 
-	read_header_timeout, err := LoadTime("HTTP_READ_HEADER_TIMEOUT")
+	operationTimeout, err := LoadTime("OPERATION_TIMEOUT", 10*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.OperationTimeout = operationTimeout
+
+	read_header_timeout, err := LoadTime("HTTP_READ_HEADER_TIMEOUT", 5*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.HTTPReadHeaderTimeout = read_header_timeout
 
-	read_timeout, err := LoadTime("HTTP_READ_TIMEOUT")
+	read_timeout, err := LoadTime("HTTP_READ_TIMEOUT", 10*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.HTTPReadTimeout = read_timeout
 
-	write_timeout, err := LoadTime("HTTP_WRITE_TIMEOUT")
+	write_timeout, err := LoadTime("HTTP_WRITE_TIMEOUT", 15*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.HTTPWriteTimeout = write_timeout
 
-	idle_timeout, err := LoadTime("HTTP_IDLE_TIMEOUT")
+	idle_timeout, err := LoadTime("HTTP_IDLE_TIMEOUT", 60*time.Second)
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.HTTPIdleTimeout = idle_timeout
+
+	position_check_interval, err := LoadTime("POSITION_CHECK_INTERVAL", 30*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionCheckInterval = position_check_interval
+
+	position_stale_after, err := LoadTime("POSITION_STALE_AFTER", 60*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionStaleAfter = position_stale_after
+
+	position_workers, err := LoadInt32("POSITION_WORKERS", 4)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionWorkers = position_workers
+
+	position_queue_size, err := LoadInt32("POSITION_QUEUE_SIZE", 100)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PositionQueueSize = position_queue_size
+	if cfg.PositionWorkers == 0 || cfg.PositionQueueSize == 0 {
+		return Config{}, fmt.Errorf("POSITION_WORKERS and POSITION_QUEUE_SIZE must be positive")
+	}
+
+	cfg.PushHTTPURL = strings.TrimSpace(os.Getenv("PUSH_HTTP_URL"))
+	if cfg.PushHTTPURL == "" {
+		return Config{}, fmt.Errorf("PUSH_HTTP_URL is required")
+	}
+
+	push_request_timeout, err := LoadTime("PUSH_REQUEST_TIMEOUT", 1*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.PushRequestTimeout = push_request_timeout
+
 	return cfg, nil
 }
